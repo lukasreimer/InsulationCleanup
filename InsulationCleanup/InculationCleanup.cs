@@ -18,6 +18,8 @@ namespace InsulationCleanup
     [Regeneration(RegenerationOption.Manual)]
     public class ChangeToHostWorkset : IExternalCommand
     {
+        private String title = "ChangeToHostWorkset Addin";
+
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
             try
@@ -30,7 +32,7 @@ namespace InsulationCleanup
                 var filter = new ElementCategoryFilter(BuiltInCategory.OST_PipeInsulations);
                 var collector = new FilteredElementCollector(doc);
                 IList<Element> insulationElements = collector.WherePasses(filter).WhereElementIsNotElementType().ToElements();
-                   
+
                 // Collect all roque insulation elements (insulation workset is not host workset)
                 var roqueElements = new List<Tuple<PipeInsulation, Element>>();  // (roque insulation object, target element object)
                 foreach (var element in insulationElements)
@@ -44,24 +46,54 @@ namespace InsulationCleanup
                     }
                 }
 
-                String prompt = "The roque insulations in the current document are:\n";
-                foreach (var tuple in roqueElements)
+                // Output a report of the identified roque insulation elements
+                String prompt = $"There are {roqueElements.Count} roque insulation elements in this document. ";
+                if (roqueElements.Count != 0)
                 {
-                    PipeInsulation roqueElement = tuple.Item1;
-                    Element targetElement = tuple.Item2;
-                    prompt += $"roque insulation: {roqueElement.Name} #{roqueElement.Id} @ workset: {roqueElement.WorksetId}, "+
-                              $"target element: {targetElement.Name} #{targetElement.Id} @ workset: {targetElement.WorksetId}\n";
+                    prompt += "They are:\n\n";
+                    foreach (var tuple in roqueElements)
+                    {
+                        PipeInsulation roqueElement = tuple.Item1;
+                        Element targetElement = tuple.Item2;
+                        prompt += $"roque insulation: {roqueElement.Name} #{roqueElement.Id} @ workset: {roqueElement.WorksetId}, ";
+                        prompt += $"target element: {targetElement.Name} #{targetElement.Id} @ workset: {targetElement.WorksetId}\n";
+                    }
                 }
-                TaskDialog.Show("Revit", prompt);
+                TaskDialog.Show(this.title, prompt);
 
-                // Move Insulation to Host Workset
-                var trans = new Transaction(doc, "ChangeToHostWorkset");
-                trans.Start();
-                foreach (Tuple<PipeInsulation, Element> tuple in roqueElements)
+                // Save the current workset for resetting later
+                WorksetTable worksets = doc.GetWorksetTable();
+                WorksetId initalWorksetId = worksets.GetActiveWorksetId();
+
+                // Delete roque insulation and create new insulation on correct host workset
+                using (var trans = new Transaction(doc))
                 {
-                    // do business...
+                    trans.Start("ChangeToHostWorkset");
+                    foreach (var tuple in roqueElements)
+                    {
+                        // Unpack tuple
+                        PipeInsulation roqueElement = tuple.Item1;
+                        Element targetElement = tuple.Item2;
+                        // Get data needed for PipeInsulation "constructor"
+                        var insulationTypeId = roqueElement.GetTypeId();
+                        var insulationThickness = roqueElement.Thickness;
+                        // Delete roque insulation and create new insulation on the correct host
+                        doc.Delete(roqueElement.Id);
+                        try
+                        {
+                            worksets.SetActiveWorksetId(targetElement.WorksetId);
+                            PipeInsulation.Create(doc, targetElement.Id, insulationTypeId, insulationThickness);
+                        }
+                        catch (Exception)
+                        {
+                            // TODO: keep track of failed reincarnations and report after commiting the transaction
+                            // ...
+                        }
+                    }
+                    // Reset the active workset
+                    worksets.SetActiveWorksetId(initalWorksetId);
+                    trans.Commit();
                 }
-                trans.Commit();
             }
             catch (Exception e)
             {
