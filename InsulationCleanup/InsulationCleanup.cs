@@ -6,9 +6,9 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Plumbing;
 using Autodesk.Revit.UI;
 
+// TODO: add documentation
 namespace InsulationCleanup
 {
-
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
     public class ChangeToHostWorkset : IExternalCommand
@@ -71,7 +71,6 @@ namespace InsulationCleanup
                             catch (Exception)
                             {
                                 // TODO: keep track of failed reincarnations and report after commiting the transaction
-                                // ...
                             }
                         }
                         // Reset the active workset
@@ -99,7 +98,6 @@ namespace InsulationCleanup
             string title = "Rogue Insulation Report";
             string message = $"There are {rogueElements.Count} rogue insulation elements in this document.";
             string content = "";
-            //string footer = "Do you want to move the rogue insulation to the hosts worksets?";
            
             // Populate the detailed content part of the dialog
             if (rogueElements.Count != 0)  // there are rogue elements
@@ -118,13 +116,12 @@ namespace InsulationCleanup
                     content += $"hosted by: {targetElement.Name} #{targetElement.Id} @ workset: {targetElement.WorksetId}\n";
                 }
             }
-            
+
             // Configure and show dialog
+            // TODO: add report export option
             TaskDialog dialog = new TaskDialog(title);
             dialog.MainInstruction = message;
             dialog.ExpandedContent = content;
-            //dialog.FooterText = footer;
-            dialog.AllowCancellation = false;
             if (rogueElements.Count != 0)
             {
                 dialog.MainIcon = TaskDialogIcon.TaskDialogIconWarning;
@@ -137,8 +134,6 @@ namespace InsulationCleanup
                 dialog.CommonButtons = TaskDialogCommonButtons.Ok;
                 dialog.DefaultButton = TaskDialogResult.Ok;
             }
-            // TODO: add report export option
-           
             TaskDialogResult result = dialog.Show();
             return result;
         }
