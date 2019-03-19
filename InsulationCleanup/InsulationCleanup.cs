@@ -1,15 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Plumbing;
 using Autodesk.Revit.UI;
-using Autodesk.Revit.UI.Selection;
 
 namespace InsulationCleanup
 {
@@ -26,11 +21,11 @@ namespace InsulationCleanup
                 UIApplication uiapp = commandData.Application;
                 Document doc = uiapp.ActiveUIDocument.Document;
 
+                // TODO: extract into method
                 // Select all pipe insulation elements
                 var filter = new ElementCategoryFilter(BuiltInCategory.OST_PipeInsulations);
                 var collector = new FilteredElementCollector(doc);
                 IList<Element> insulationElements = collector.WherePasses(filter).WhereElementIsNotElementType().ToElements();
-
                 // Collect all rogue insulation elements (where insulation workset is not host workset)
                 var rogueElements = new List<Tuple<PipeInsulation, Element>>();  // (rogue insulation element, hosting element)
                 foreach (var element in insulationElements)
@@ -46,10 +41,10 @@ namespace InsulationCleanup
 
                 // Show a report of the found rogue insulation elements
                 TaskDialogResult result = ShowReport(rogueElements);
-                TaskDialog.Show("Result", result.ToString());
 
                 if (result == TaskDialogResult.Yes)
                 {
+                    // TODO: extract into method
                     // Save the current workset for resetting later
                     WorksetTable worksets = doc.GetWorksetTable();
                     WorksetId initalWorksetId = worksets.GetActiveWorksetId();
@@ -100,14 +95,16 @@ namespace InsulationCleanup
 
         private TaskDialogResult ShowReport(List<Tuple<PipeInsulation, Element>> rogueElements)
         {
-            // setup text components for the dialog
-            string title = "Rogue Insulation";
+            // Setup text components for the dialog
+            string title = "Rogue Insulation Report";
             string message = $"There are {rogueElements.Count} rogue insulation elements in this document.";
             string content = "";
-            string footer = "Do you want to move the rogue insulation to the hosts worksets?";
-            // populate the detailed content part of the dialog
+            //string footer = "Do you want to move the rogue insulation to the hosts worksets?";
+           
+            // Populate the detailed content part of the dialog
             if (rogueElements.Count != 0)  // there are rogue elements
             {
+                message += "\nDo you want to move these elements to their hosts workset?";
                 // iterate through all (rogue insulation, host element) tuples
                 foreach (var tuple in rogueElements)
                 {
@@ -115,20 +112,33 @@ namespace InsulationCleanup
                     PipeInsulation rogueElement = tuple.Item1;
                     Element targetElement = tuple.Item2;
                     // create a report detail line
-                    // TODO: figure out the workset name
+                    // TODO: add line numbers
+                    // TODO: figure out the workset names
                     content += $"insulation: {rogueElement.Name} #{rogueElement.Id} @ workset: {rogueElement.WorksetId}, ";
                     content += $"hosted by: {targetElement.Name} #{targetElement.Id} @ workset: {targetElement.WorksetId}\n";
                 }
             }
-            // configure and show dialog
+            
+            // Configure and show dialog
             TaskDialog dialog = new TaskDialog(title);
-            dialog.MainIcon = TaskDialogIcon.TaskDialogIconInformation;
             dialog.MainInstruction = message;
             dialog.ExpandedContent = content;
-            dialog.FooterText = footer;
+            //dialog.FooterText = footer;
             dialog.AllowCancellation = false;
-            dialog.CommonButtons = TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.No;
-            dialog.DefaultButton = TaskDialogResult.No;
+            if (rogueElements.Count != 0)
+            {
+                dialog.MainIcon = TaskDialogIcon.TaskDialogIconWarning;
+                dialog.CommonButtons = TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.No;
+                dialog.DefaultButton = TaskDialogResult.No;
+            }
+            else
+            {
+                dialog.MainIcon = TaskDialogIcon.TaskDialogIconInformation;
+                dialog.CommonButtons = TaskDialogCommonButtons.Ok;
+                dialog.DefaultButton = TaskDialogResult.Ok;
+            }
+            // TODO: add report export option
+           
             TaskDialogResult result = dialog.Show();
             return result;
         }
