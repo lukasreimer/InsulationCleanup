@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<RevitAddIns>
+  <AddIn Type="Command">
+    <Assembly>C:\Users\lreimer\OneDrive\Documents\visual studio 2015\Projects\InsulationCleanup\InsulationCleanup\bin\Debug\InsulationCleanup.dll</Assembly>
+    <AddInId>239BD853-36E4-461f-9171-C5ACEDA4E721</AddInId>
+    <FullClassName>InsulationCleanup.ChangeToHostWorkset</FullClassName>
+    <Text>ChangeToHostWorkset</Text>
+    <VendorId>VendorId</VendorId>
+    <VendorDescription>VendorDescription</VendorDescription>
+  </AddIn>
+</RevitAddIns>
