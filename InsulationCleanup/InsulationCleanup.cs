@@ -33,29 +33,29 @@ namespace InsulationCleanup
                 var collector = new FilteredElementCollector(doc);
                 IList<Element> insulationElements = collector.WherePasses(filter).WhereElementIsNotElementType().ToElements();
 
-                // Collect all roque insulation elements (insulation workset is not host workset)
-                var roqueElements = new List<Tuple<PipeInsulation, Element>>();  // (roque insulation object, target element object)
+                // Collect all rogue insulation elements (insulation workset is not host workset)
+                var rogueElements = new List<Tuple<PipeInsulation, Element>>();  // (rogue insulation object, target element object)
                 foreach (var element in insulationElements)
                 {
                     PipeInsulation insulationElement = element as PipeInsulation;
                     Element hostElement = doc.GetElement(insulationElement.HostElementId);
                     if (insulationElement.WorksetId != hostElement.WorksetId)
                     {
-                        var roqueTuple = Tuple.Create(insulationElement, hostElement);
-                        roqueElements.Add(roqueTuple);
+                        var rogueTuple = Tuple.Create(insulationElement, hostElement);
+                        rogueElements.Add(rogueTuple);
                     }
                 }
 
-                // Output a report of the identified roque insulation elements
-                String prompt = $"There are {roqueElements.Count} roque insulation elements in this document. ";
-                if (roqueElements.Count != 0)
+                // Output a report of the identified rogue insulation elements
+                String prompt = $"There are {rogueElements.Count} rogue insulation elements in this document. ";
+                if (rogueElements.Count != 0)
                 {
                     prompt += "They are:\n\n";
-                    foreach (var tuple in roqueElements)
+                    foreach (var tuple in rogueElements)
                     {
-                        PipeInsulation roqueElement = tuple.Item1;
+                        PipeInsulation rogueElement = tuple.Item1;
                         Element targetElement = tuple.Item2;
-                        prompt += $"roque insulation: {roqueElement.Name} #{roqueElement.Id} @ workset: {roqueElement.WorksetId}, ";
+                        prompt += $"rogue insulation: {rogueElement.Name} #{rogueElement.Id} @ workset: {rogueElement.WorksetId}, ";
                         prompt += $"target element: {targetElement.Name} #{targetElement.Id} @ workset: {targetElement.WorksetId}\n";
                     }
                 }
@@ -65,20 +65,20 @@ namespace InsulationCleanup
                 WorksetTable worksets = doc.GetWorksetTable();
                 WorksetId initalWorksetId = worksets.GetActiveWorksetId();
 
-                // Delete roque insulation and create new insulation on correct host workset
+                // Delete rogue insulation and create new insulation on correct host workset
                 using (var trans = new Transaction(doc))
                 {
                     trans.Start("ChangeToHostWorkset");
-                    foreach (var tuple in roqueElements)
+                    foreach (var tuple in rogueElements)
                     {
                         // Unpack tuple
-                        PipeInsulation roqueElement = tuple.Item1;
+                        PipeInsulation rogueElement = tuple.Item1;
                         Element targetElement = tuple.Item2;
                         // Get data needed for PipeInsulation "constructor"
-                        var insulationTypeId = roqueElement.GetTypeId();
-                        var insulationThickness = roqueElement.Thickness;
-                        // Delete roque insulation and create new insulation on the correct host
-                        doc.Delete(roqueElement.Id);
+                        var insulationTypeId = rogueElement.GetTypeId();
+                        var insulationThickness = rogueElement.Thickness;
+                        // Delete rogue insulation and create new insulation on the correct host
+                        doc.Delete(rogueElement.Id);
                         try
                         {
                             worksets.SetActiveWorksetId(targetElement.WorksetId);
