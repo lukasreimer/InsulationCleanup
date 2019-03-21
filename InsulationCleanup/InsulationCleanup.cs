@@ -7,7 +7,6 @@ using Autodesk.Revit.DB.Plumbing;
 using Autodesk.Revit.UI;
 
 // TODO: add documentation
-// CHANGE
 namespace InsulationCleanup
 {
     [Transaction(TransactionMode.Manual)]
@@ -23,6 +22,7 @@ namespace InsulationCleanup
                 Document doc = uiapp.ActiveUIDocument.Document;
 
                 // TODO: extract into method
+                // TODO: make this also usable for duct insulation
                 // Select all pipe insulation elements
                 var filter = new ElementCategoryFilter(BuiltInCategory.OST_PipeInsulations);
                 var collector = new FilteredElementCollector(doc);
